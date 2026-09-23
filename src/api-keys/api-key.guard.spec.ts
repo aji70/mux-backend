@@ -124,4 +124,52 @@ describe('ApiKeyGuard', () => {
       'API key validation service unavailable',
     );
   });
+
+  it('rejects when a client-supplied user id does not match the verified API key identity', async () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(false);
+    jest.spyOn(reflector, 'get').mockReturnValue(true);
+
+    const req: any = {
+      headers: { authorization: 'ApiKey mux_test_abc', 'user-agent': 'jest' },
+      path: '/wallets/protected',
+      method: 'GET',
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      query: { userId: 'attacker-supplied-id' },
+      body: { userId: 'attacker-supplied-id' },
+    };
+
+    const context: any = {
+      getHandler: () => undefined,
+      getClass: () => undefined,
+      switchToHttp: () => ({ getRequest: () => req }),
+    };
+
+    await expect(guard.canActivate(context)).rejects.toThrow();
+  });
+
+  it('rejects when a client-supplied user id header does not match the verified API key identity', async () => {
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(false);
+    jest.spyOn(reflector, 'get').mockReturnValue(true);
+
+    const req: any = {
+      headers: {
+        authorization: 'ApiKey mux_test_abc',
+        'user-agent': 'jest',
+        'x-user-id': 'attacker-supplied-id',
+      },
+      path: '/wallets/protected',
+      method: 'GET',
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+    };
+
+    const context: any = {
+      getHandler: () => undefined,
+      getClass: () => undefined,
+      switchToHttp: () => ({ getRequest: () => req }),
+    };
+
+    await expect(guard.canActivate(context)).rejects.toThrow();
+  });
 });
