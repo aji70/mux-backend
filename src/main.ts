@@ -19,6 +19,19 @@ function parseCorsOrigins(raw: string | undefined): string[] {
   return raw.split(',').map((o) => o.trim()).filter(Boolean);
 }
 
+/**
+ * Canonical API version prefix. Every HTTP route is served under this prefix
+ * so the v1 surface is complete and consistent (no unprefixed or
+ * double-prefixed routes). See docs/API-VERSIONING.md.
+ */
+export const API_VERSION_PREFIX = 'v1';
+
+/**
+ * Routes that must remain reachable outside the versioned prefix, e.g.
+ * operational probes consumed by the platform before the app is ready.
+ */
+const UNVERSIONED_ROUTES = ['health', 'healthz', 'metrics'];
+
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
@@ -52,7 +65,10 @@ async function bootstrap() {
 
   // All routes are served under /v1. See docs/API-VERSIONING.md for the
   // versioning strategy and how future breaking changes will be introduced.
-  app.setGlobalPrefix('v1');
+  // Only the operational probes listed in UNVERSIONED_ROUTES stay unprefixed.
+  app.setGlobalPrefix(API_VERSION_PREFIX, {
+    exclude: UNVERSIONED_ROUTES,
+  });
 
   // Validate incoming requests for DTOs globally
   app.useGlobalPipes(
