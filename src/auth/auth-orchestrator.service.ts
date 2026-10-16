@@ -6,21 +6,26 @@ import {
 } from './auth-provider.enum';
 
 /**
+ * Plain payload shape inspected by {@link AuthPayloadValidator}.
+ */
+export interface AuthPayload {
+  authId?: string;
+  email?: string;
+  displayName?: string;
+  authProvider?: AuthProvider | string | null;
+  network?: string;
+}
+
+/**
  * Validates authentication payloads from identity providers.
  *
  * Fail-closed: invalid or missing claims are rejected.
  */
 @Injectable()
 export class AuthPayloadValidator {
-  authId!: string;
-  email?: string;
-  displayName?: string;
-  authProvider?: AuthProvider | string | null;
-  network?: string;
-
   private static readonly logger = new Logger(AuthPayloadValidator.name);
 
-  static validate(payload: any): void {
+  static validate(payload: AuthPayload): void {
     if (!payload) {
       throw new BadRequestException('Payload is required');
     }
@@ -48,7 +53,7 @@ export class AuthPayloadValidator {
 export class AuthOrchestratorService {
   private readonly logger = new Logger(AuthOrchestratorService.name);
 
-  validatePayload(payload: AuthPayloadValidator): boolean {
+  validatePayload(payload: AuthPayload): boolean {
     if (!payload.authId) {
       this.logger.warn('Missing authId in payload');
       return false;
